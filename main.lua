@@ -9,7 +9,8 @@ local Interval = 5; -- Seconds
 
 local Token = io.open('token.txt', 'r'):read('*a')
 local Tracking = {
-    '283009043168231425'; -- Infernus!
+    -- '1234567890';
+    -- '0987654321';
 }
 local TrackedPictures = {}
 
@@ -38,9 +39,10 @@ local function CreateFolder(Name)
     end
 end
 
-local function SaveProfilePicture(Name, URL)
-    CreateFolder(Name)
-    local Directory = GetProfilePictureDirectory(Name)
+local function SaveProfilePicture(Name, ID, URL)
+    local FolderName = string.format('%s - %s', Name, ID)
+    CreateFolder(FolderName)
+    local Directory = GetProfilePictureDirectory(FolderName)
     local Sliced = URL:split('/')
     local Image = Sliced[#Sliced]
     local ImageDirectory = string.format('%s/%s', Directory, Image);
@@ -61,18 +63,16 @@ local function TrackChange(UserID)
 
     local Name = GetUsername(UserID)
     if (not Last) then
-        SaveProfilePicture( Name, Current )
         print(string.format('First PFP for %s: %s', GetUsername(UserID), Current))
-
+        SaveProfilePicture( Name, UserID, Current )
         TrackedPictures[UserID] = Current;
         return true;
     end
 
     if (Current ~= Last) then
-        SaveProfilePicture(Name, Client:getUser(UserID).avatarURL)
-        TrackedPictures[UserID] = Client:getUser(UserID).avatarURL;
-
         print(string.format('%s changed their PFP: %s', GetUsername(UserID), Last));
+        SaveProfilePicture( Name, UserID, Client:getUser(UserID).avatarURL )
+        TrackedPictures[UserID] = Client:getUser(UserID).avatarURL;
         return true;
     end
 
@@ -90,8 +90,9 @@ local function UpdateChanges()
 end
 
 Client:on('ready', function()
-    print('Started Inferny!')
+    print(string.format('Started %s!', Client.user.name));
 
+    coroutine.wrap(UpdateChanges)() -- First time run
     Timer.setInterval(Interval*1000, function()
         coroutine.wrap(UpdateChanges)()
     end)
